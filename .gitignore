@@ -1,0 +1,11 @@
+/bin/
+/.idea/
+*.sshvault
+*.sshvault.*
+*.lock
+.DS_Store
+AGENTS.md
+MEMORY.md
+PLAN.md
+.env
+.env.*
