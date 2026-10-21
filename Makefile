@@ -1,7 +1,7 @@
 VERSION ?= dev
 LDFLAGS = -s -w -X main.version=$(VERSION)
 
-.PHONY: build test check smoke release
+.PHONY: build test check smoke release dist
 
 build:
 	go build -trimpath -ldflags '$(LDFLAGS)' -o bin/sshm ./cmd/sshm
@@ -22,3 +22,7 @@ release:
 			CGO_ENABLED=0 GOOS=$$platform GOARCH=$$arch go build -trimpath -ldflags '$(LDFLAGS)' -o bin/sshm-$$platform-$$arch ./cmd/sshm || exit 1; \
 		done; \
 	done
+
+# Archives for GitHub Releases; release keeps the original bare-binary target.
+dist:
+	python3 scripts/release.py package --version "$(VERSION)"

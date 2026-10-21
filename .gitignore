@@ -9,3 +9,6 @@ MEMORY.md
 PLAN.md
 .env
 .env.*
+/features.md
+/dist/
+__pycache__/

@@ -233,9 +233,9 @@ func (m *Model) catalogView() string {
 
 func (m *Model) catalogHelp(width int) string {
 	if width < 65 {
-		return muted.Render(fitLine("←/→ каталог · ↑/↓ выбор · / поиск", width) + "\n" + fitLine("Enter подключить · n создать", width) + "\n" + fitLine("e изменить · d удалить · q выход", width))
+		return muted.Render(fitLine("←/→ каталог · ↑/↓ выбор · / поиск", width) + "\n" + fitLine("Enter открыть · пробел свернуть", width) + "\n" + fitLine("e изменить · d удалить · q выход", width))
 	}
-	return muted.Render(fitLine("←/→ каталог · ↑/↓ выбор · / поиск · f папка · n создать · e изменить · d удалить", width) + "\n" + fitLine("Enter подключить · a профиль · l блокировка · P пароль · q выход", width) + "\n" + fitLine("S сохранить · E экспорт · M объединить · R переоткрыть", width))
+	return muted.Render(fitLine("←/→ каталог · ↑/↓ выбор · / поиск · f папка · n создать · e изменить · d удалить", width) + "\n" + fitLine("Enter открыть · пробел свернуть · a профиль · l блокировка · P пароль · q выход", width) + "\n" + fitLine("S сохранить · E экспорт · M объединить · R переоткрыть", width))
 }
 
 func (m *Model) catalogRows(rows []row, width, limit int) string {
@@ -250,7 +250,7 @@ func (m *Model) catalogRows(rows []row, width, limit int) string {
 	var lines []string
 	for i := start; i < len(rows) && i < start+limit; i++ {
 		r := rows[i]
-		name := clean(r.name)
+		name := m.treeName(r)
 		detail := clean(r.detail)
 		if m.tab == 1 {
 			if c, ok := m.doc.Credential(r.id); ok {
@@ -284,7 +284,11 @@ func (m *Model) details(rows []row, width int) string {
 		}
 		lines = append(lines, muted.Render(label+"  ")+clean(value))
 	}
-	switch m.tab {
+	tab := m.tab
+	if m.isFolder(r) {
+		tab = 2
+	}
+	switch tab {
 	case 0:
 		for _, c := range m.doc.Connections {
 			if c.ID != r.id {
@@ -384,6 +388,6 @@ func (m *Model) compactCatalogView() string {
 	} else if m.search.Value() != "" {
 		query = "Поиск: " + clean(m.search.Value())
 	}
-	content := accent.Render(fitLine("‹ "+labels[m.tab]+" ›", width)) + "\n" + fitLine(query, width) + "\n" + m.catalogRows(m.rows(), width, max(1, m.height-8)) + "\n" + muted.Render(fitLine("Enter подключить · q выход", width))
+	content := accent.Render(fitLine("‹ "+labels[m.tab]+" ›", width)) + "\n" + fitLine(query, width) + "\n" + m.catalogRows(m.rows(), width, max(1, m.height-8)) + "\n" + muted.Render(fitLine("Enter открыть · пробел свернуть · q выход", width))
 	return lipgloss.NewStyle().Padding(1, 2).Render(content + "\n" + m.statusView(width))
 }

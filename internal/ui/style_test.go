@@ -25,7 +25,8 @@ func visualModel(t *testing.T) *Model {
 	for i := 0; i < 40; i++ {
 		m.doc.Connections = append(m.doc.Connections, domain.Connection{ID: fmt.Sprint(i), Name: fmt.Sprintf("server-%02d", i), Host: "example.test", Port: 22, FolderID: "folder", Notes: strings.Repeat("長い заметки ", 20)})
 	}
-	m.selected = 39
+	m.expanded[0] = map[string]bool{"folder": true}
+	m.selected = 40
 	return m
 }
 
@@ -62,12 +63,14 @@ func TestDetailsFollowFilteredSelectionAndHideSecrets(t *testing.T) {
 	m := visualModel(t)
 	m.selected = 0
 	m.search.SetValue("server-07")
+	m.selected = 1
 	view := ansi.Strip(m.View())
 	if !strings.Contains(view, "server-07") || strings.Contains(view, "server-00") {
 		t.Fatal("details do not match filtered selection")
 	}
 	for tab := 0; tab < 3; tab++ {
 		m.tab = tab
+		m.selected = 0
 		m.search.SetValue("")
 		view = m.View()
 		for _, secret := range []string{"private-key-must-not-appear", "password-must-not-appear", "passphrase-must-not-appear"} {

@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -70,6 +69,7 @@ type Model struct {
 	search           textinput.Model
 	searching        bool
 	folderID         string
+	expanded         [3]map[string]bool
 	choices          []row
 	choice           int
 	connection       domain.Connection
@@ -358,8 +358,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.confirmAction = "delete"
 				m.screen = "confirm"
 			}
+		case " ":
+			m.toggleFolder()
 		case "enter":
-			if m.tab == 0 {
+			if m.selectedFolder() {
+				m.toggleFolder()
+			} else if m.tab == 0 {
 				return m, m.connect(false)
 			} else {
 				m.edit(true)
@@ -418,36 +422,6 @@ func (m *Model) quit() tea.Cmd {
 	return tea.Quit
 }
 
-func (m *Model) rows() []row {
-	var rows []row
-	switch m.tab {
-	case 0:
-		for _, c := range m.doc.Connections {
-			if m.folderID != "" && !m.inFolder(c.FolderID, m.folderID) {
-				continue
-			}
-			rows = append(rows, row{c.ID, c.Name, fmt.Sprintf("%s:%d · %s · %s", c.Host, c.Port, m.folderName(c.FolderID), c.Tags)})
-		}
-	case 1:
-		for _, c := range m.doc.Credentials {
-			rows = append(rows, row{c.ID, c.Name, c.Username + " · " + c.Kind})
-		}
-	case 2:
-		for _, f := range m.doc.Folders {
-			rows = append(rows, row{f.ID, f.Name, m.folderName(f.ParentID)})
-		}
-	}
-	q := strings.ToLower(m.search.Value())
-	var filtered []row
-	for _, r := range rows {
-		if strings.Contains(strings.ToLower(r.name+" "+r.detail), q) {
-			filtered = append(filtered, r)
-		}
-	}
-	sort.Slice(filtered, func(i, j int) bool { return strings.ToLower(filtered[i].name) < strings.ToLower(filtered[j].name) })
-	return filtered
-}
-
 func (m *Model) clamp() {
 	n := len(m.rows())
 	if m.selected >= n {
@@ -495,6 +469,10 @@ func (m *Model) credentialNames(ids []string) string {
 }
 
 func (m *Model) edit(existing bool) {
+	tab := m.tab
+	if existing && m.selectedFolder() {
+		tab = 2
+	}
 	var id string
 	if existing {
 		rows := m.rows()
@@ -503,7 +481,7 @@ func (m *Model) edit(existing bool) {
 		}
 		id = rows[m.selected].id
 	}
-	switch m.tab {
+	switch tab {
 	case 0:
 		c := domain.Connection{Port: 22, FolderID: m.folderID}
 		for _, v := range m.doc.Connections {
@@ -893,7 +871,11 @@ func (m *Model) confirm() tea.Cmd {
 		}
 		id := rows[m.selected].id
 		d := copyDoc(m.doc)
-		switch m.tab {
+		tab := m.tab
+		if m.selectedFolder() {
+			tab = 2
+		}
+		switch tab {
 		case 0:
 			for i, c := range d.Connections {
 				if c.ID == id {
@@ -967,6 +949,9 @@ func (m *Model) chooseFolder() {
 }
 
 func (m *Model) connect(choose bool) tea.Cmd {
+	if m.selectedFolder() {
+		return nil
+	}
 	if m.dirty {
 		m.setStatus("Сначала сохраните изменения (S) или переоткройте хранилище (R)", true)
 		return nil
